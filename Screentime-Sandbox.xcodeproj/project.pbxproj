@@ -44,6 +44,7 @@
 		4EE2A3702C9205A600D416C7 /* Screentime-SandboxUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Screentime-SandboxUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4EE2A3742C9205A600D416C7 /* Screentime_SandboxUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Screentime_SandboxUITests.swift; sourceTree = "<group>"; };
 		4EE2A3762C9205A600D416C7 /* Screentime_SandboxUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Screentime_SandboxUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		4EE2A3832C92143B00D416C7 /* Screentime-Sandbox.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Screentime-Sandbox.entitlements"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -94,6 +95,7 @@
 		4EE2A3582C92059E00D416C7 /* Screentime-Sandbox */ = {
 			isa = PBXGroup;
 			children = (
+				4EE2A3832C92143B00D416C7 /* Screentime-Sandbox.entitlements */,
 				4EE2A3592C92059E00D416C7 /* Screentime_SandboxApp.swift */,
 				4EE2A35B2C92059E00D416C7 /* ContentView.swift */,
 				4EE2A35D2C9205A400D416C7 /* Assets.xcassets */,
@@ -419,6 +421,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Screentime-Sandbox/Screentime-Sandbox.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Screentime-Sandbox/Preview Content\"";
@@ -448,6 +451,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Screentime-Sandbox/Screentime-Sandbox.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Screentime-Sandbox/Preview Content\"";
