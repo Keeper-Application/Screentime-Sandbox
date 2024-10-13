@@ -1,18 +1,29 @@
-
-//  Screentime_SandboxApp.swift
-//  Screentime-Sandbox
-//
-//  Created by Ayub Mohamed on 2024-09-11.
-//
-
 import SwiftUI
 import FamilyControls
 import DeviceActivity
 import ManagedSettings
 
+class MyMonitor: DeviceActivityMonitor {
+    let store = ManagedSettingsStore()
+    
+    override func intervalDidStart(for activity: DeviceActivityName) {
+        super.intervalDidStart(for: activity)
+        
+        if let storedApps = UserDefaults.standard.array(forKey: "storedApplications") as? [String] {
+            store.shield.applications = Set(storedApps.compactMap { ApplicationToken($0) })
+        }
+    }
+    
+    override func intervalDidEnd(for activity: DeviceActivityName) {
+        super.intervalDidEnd(for: activity)
+        store.shield.applications = nil
+    }
+}
+
 @main
 struct Screentime_SandboxApp: App {
-    let center = AuthorizationCenter.shared
+    let authorizationCenter = AuthorizationCenter.shared
+    let deviceActivityCenter = DeviceActivityCenter()
     @State var selection = FamilyActivitySelection()
     @State var isPickerPresented = false
 
@@ -22,9 +33,10 @@ struct Screentime_SandboxApp: App {
                 .onAppear {
                     Task {
                         do {
-                            try await center.requestAuthorization(for: .individual)
+                            try await authorizationCenter.requestAuthorization(for: .individual)
                             print("Authorization successful")
-                            loadStoredApplications()  // Load stored applications on app start
+                            loadStoredApplications()
+                            startMonitoring()
                         } catch {
                             print("Authorization failed: \(error.localizedDescription)")
                         }
@@ -40,8 +52,23 @@ struct Screentime_SandboxApp: App {
                 .familyActivityPicker(isPresented: $isPickerPresented, selection: $selection)
                 .onChange(of: selection) { newSelection in
                     logSelection(newSelection)
-                    storeApplications(newSelection)  // Store selected applications
+                    storeApplications(newSelection)
                 }
+        }
+    }
+
+    func startMonitoring() {
+        let schedule = DeviceActivitySchedule(
+            intervalStart: DateComponents(hour: 0, minute: 0),
+            intervalEnd: DateComponents(hour: 23, minute: 59),
+            repeats: true
+        )
+        
+        do {
+            try deviceActivityCenter.startMonitoring(.daily, during: schedule)
+            print("Monitoring started successfully")
+        } catch {
+            print("Failed to start monitoring: \(error.localizedDescription)")
         }
     }
 
@@ -55,25 +82,25 @@ struct Screentime_SandboxApp: App {
         print("Selected Web Domains: \(selectedWebDomains)")
     }
 
-    // Store selected applications in UserDefaults
     func storeApplications(_ selection: FamilyActivitySelection) {
-        let selectedApps = selection.applications.map { $0.token }
+        let selectedApps = selection.applications.map { $0.token.rawValue }
         UserDefaults.standard.set(selectedApps, forKey: "storedApplications")
         
-        // Optionally store names if you can map them
         let appNames = selection.applications.compactMap { app in
-            // Assuming you have a way to get localized names
             app.localizedDisplayName ?? "Unknown App"
         }
         UserDefaults.standard.set(appNames, forKey: "storedApplicationNames")
     }
 
-    // Load stored applications from UserDefaults
     func loadStoredApplications() {
-        if let storedApps = UserDefaults.standard.array(forKey: "storedApplications") as? [ActivityCategoryToken],
+        if let storedApps = UserDefaults.standard.array(forKey: "storedApplications") as? [String],
            let storedAppNames = UserDefaults.standard.array(forKey: "storedApplicationNames") as? [String] {
             print("Loaded Applications: \(storedApps)")
             print("Loaded Application Names: \(storedAppNames)")
         }
     }
+}
+
+extension DeviceActivityName {
+    static let daily = Self("daily")
 }
