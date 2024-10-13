@@ -6,6 +6,7 @@ import ManagedSettings
 @main
 struct Screentime_SandboxApp: App {
     let center = AuthorizationCenter.shared
+    let store = ManagedSettingsStore()
     @State var selection = FamilyActivitySelection()
     @State var isPickerPresented = false
     
@@ -25,6 +26,7 @@ struct Screentime_SandboxApp: App {
                     do {
                         try await center.requestAuthorization(for: .individual)
                         print("Authorization successful")
+                        setupMonitoring()
                     } catch {
                         print("Authorization failed: \(error.localizedDescription)")
                     }
@@ -34,20 +36,44 @@ struct Screentime_SandboxApp: App {
     }
     
     func handleSelectionChange(_ newSelection: FamilyActivitySelection) {
-        print("Selection changed")
-        // Here you would typically save the selection and set up monitoring
+        let selectedApps = newSelection.applicationTokens.map { $0.rawValue }
+        UserDefaults.standard.set(selectedApps, forKey: "selectedAppsToDiscourage")
+        print("Selected apps to discourage: \(selectedApps)")
+    }
+    
+    func setupMonitoring() {
+        let schedule = DeviceActivitySchedule(
+            intervalStart: DateComponents(hour: 0, minute: 0),
+            intervalEnd: DateComponents(hour: 23, minute: 59),
+            repeats: true
+        )
+        let center = DeviceActivityCenter()
+        do {
+            try center.startMonitoring(.daily, during: schedule)
+            print("Monitoring started successfully")
+        } catch {
+            print("Failed to start monitoring: \(error)")
+        }
     }
 }
 
 class MyMonitor: DeviceActivityMonitor {
+    let store = ManagedSettingsStore()
+    
     override func intervalDidStart(for activity: DeviceActivityName) {
         super.intervalDidStart(for: activity)
-        // Implement shielding logic here
+        
+        if let storedAppTokens = UserDefaults.standard.array(forKey: "selectedAppsToDiscourage") as? [String] {
+            let applicationTokens = Set(storedAppTokens.compactMap { ApplicationToken($0) })
+            store.shield.applications = applicationTokens.isEmpty ? nil : applicationTokens
+            print("Shielding applied to apps: \(applicationTokens)")
+        }
     }
     
     override func intervalDidEnd(for activity: DeviceActivityName) {
         super.intervalDidEnd(for: activity)
-        // Remove shields here
+        store.shield.applications = nil
+        print("Shields removed from all apps")
     }
 }
 
