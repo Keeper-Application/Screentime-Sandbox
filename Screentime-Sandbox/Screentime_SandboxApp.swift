@@ -1,3 +1,4 @@
+
 import SwiftUI
 import FamilyControls
 import DeviceActivity
@@ -6,7 +7,6 @@ import ManagedSettings
 @main
 struct Screentime_SandboxApp: App {
     let center = AuthorizationCenter.shared
-    let store = ManagedSettingsStore()
     @State var selection = FamilyActivitySelection()
     @State var isPickerPresented = false
     
@@ -36,11 +36,19 @@ struct Screentime_SandboxApp: App {
     }
     
     func handleSelectionChange(_ newSelection: FamilyActivitySelection) {
-        let selectedApps = newSelection.applicationTokens.map { $0.rawValue }
-        UserDefaults.standard.set(selectedApps, forKey: "selectedAppsToDiscourage")
-        print("Selected apps to discourage: \(selectedApps)")
+        let selectedApps = newSelection.applications
+        
+        // Convert Applications to non-optional ApplicationTokens
+        let appTokens = Set(selectedApps.compactMap { $0.token })  // Use compactMap to unwrap optional tokens
+        
+        // Save tokens in UserDefaults
+        let tokenData = try? JSONEncoder().encode(appTokens)
+        UserDefaults.standard.set(tokenData, forKey: "selectedAppsToDiscourage")
+        
+        // Apply shields to the selected apps
+        applyAppShields(appTokens: appTokens)
+        print("Selected apps to discourage: \(appTokens)")
     }
-    
     func setupMonitoring() {
         let schedule = DeviceActivitySchedule(
             intervalStart: DateComponents(hour: 0, minute: 0),
@@ -55,6 +63,19 @@ struct Screentime_SandboxApp: App {
             print("Failed to start monitoring: \(error)")
         }
     }
+    
+    func applyAppShields(appTokens: Set<ApplicationToken>) {
+        let store = ManagedSettingsStore()
+        
+        // If no apps are selected, remove shields
+        if appTokens.isEmpty {
+            store.shield.applications = nil
+            print("Shields removed from all apps")
+        } else {
+            store.shield.applications = appTokens
+            print("Shields applied to apps: \(appTokens)")
+        }
+    }
 }
 
 class MyMonitor: DeviceActivityMonitor {
@@ -63,8 +84,9 @@ class MyMonitor: DeviceActivityMonitor {
     override func intervalDidStart(for activity: DeviceActivityName) {
         super.intervalDidStart(for: activity)
         
-        if let storedAppTokens = UserDefaults.standard.array(forKey: "selectedAppsToDiscourage") as? [String] {
-            let applicationTokens = Set(storedAppTokens.compactMap { ApplicationToken($0) })
+        // Retrieve the selected apps from UserDefaults
+        if let tokenData = UserDefaults.standard.data(forKey: "selectedAppsToDiscourage"),
+           let applicationTokens = try? JSONDecoder().decode(Set<ApplicationToken>.self, from: tokenData) {
             store.shield.applications = applicationTokens.isEmpty ? nil : applicationTokens
             print("Shielding applied to apps: \(applicationTokens)")
         }
@@ -80,3 +102,4 @@ class MyMonitor: DeviceActivityMonitor {
 extension DeviceActivityName {
     static let daily = Self("daily")
 }
+
