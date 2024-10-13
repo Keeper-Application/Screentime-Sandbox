@@ -38,12 +38,13 @@ struct Screentime_SandboxApp: App {
         let appTokens = Set(selectedApps.compactMap { $0.token })
         
         let tokenData = try? JSONEncoder().encode(appTokens)
+        let tokenData = try? JSONEncoder().encode(appTokens)
         UserDefaults.standard.set(tokenData, forKey: "selectedAppsToDiscourage")
         
         applyAppShields(appTokens: appTokens)
         print("Selected apps to discourage: \(appTokens)")
     }
-    
+    ß
     func setupMonitoring() {
         let schedule = DeviceActivitySchedule(
             intervalStart: DateComponents(hour: 0, minute: 0),
