@@ -1,64 +1,81 @@
-//
-//  ContentView.swift
-//  Screentime-Sandbox
-//
-//  Created by Ayub Mohamed on 2024-09-11.
-//
-
-
 import SwiftUI
 import FamilyControls
 
 struct ContentView: View {
-    @State var selection = FamilyActivitySelection()   // Captures user choices
-    @State var isPickerPresented = false                // Controls the picker presentation
-    @State var selectedAppNames: [String] = []          // Stores selected app names
+    @Binding var selection: FamilyActivitySelection
+    @State var isPickerPresented = false
+    @State var selectedAppNames: [String] = []
+    @State var passcode = ""
+    @State var isLocked = true
+    @Binding var removeShields: () -> Void
+    @Binding var applyShields: () -> Void
 
     var body: some View {
         VStack {
-            // Display selected app names or a default message
-            if selectedAppNames.isEmpty {
-                Text("Hello, Ayub!")
+            if isLocked {
+                TextField("Enter passcode", text: $passcode)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding()
+                
+                Button("Unlock") {
+                    if passcode == "1234" {
+                        isLocked = false
+                        removeShields()
+                        print("Shields removed due to correct passcode")
+                    } else {
+                        print("Incorrect passcode")
+                    }
+                    passcode = ""
+                }
             } else {
-                Text("Selected Apps: \(selectedAppNames.joined(separator: ", "))")
-                    .padding()
-            }
+                if selectedAppNames.isEmpty {
+                    Text("No apps selected")
+                        .padding()
+                } else {
+                    Text("Selected Apps: \(selectedAppNames.joined(separator: ", "))")
+                        .padding()
+                }
 
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
+                // Debugging print to ensure button is there
+                Text("Is picker presented: \(isPickerPresented ? "Yes" : "No")")
+                
+                // This is the button to select apps
+                Button("Select Apps to Discourage") {
+                    print("Select Apps button tapped")
+                    isPickerPresented = true
+                }
                 .padding()
-
-            // Button to present FamilyActivityPicker
-            Button("Select Apps/Websites") {
-                isPickerPresented = true
-            }
-            .padding()
-
-            // FamilyActivityPicker presented as a sheet
-            .familyActivityPicker(isPresented: $isPickerPresented, selection: $selection)
-            .onChange(of: selection) { newSelection in
-                updateSelectedAppNames(newSelection)
+                .familyActivityPicker(isPresented: $isPickerPresented, selection: $selection)
+                .onChange(of: selection) { newSelection in
+                    updateSelectedAppNames(newSelection)
+                }
+                
+                Button("Lock") {
+                    isLocked = true
+                    applyShields()
+                }
+                .padding()
             }
         }
-        .padding()  // Apply padding to the entire VStack
+        .padding()
     }
-
-    // Function to update the selected app names
+    
     func updateSelectedAppNames(_ selection: FamilyActivitySelection) {
         let selectedApplications = selection.applications
         
-        // Convert the selected application tokens into readable names
         selectedAppNames = selectedApplications.compactMap { app in
             app.localizedDisplayName ?? "Unknown App"
         }
         
-        // Print selected items to the console (optional for debugging)
         print("Selected Applications: \(selectedAppNames)")
     }
 }
 
 #Preview {
-    ContentView()
+    ContentView(
+        selection: .constant(FamilyActivitySelection()),
+        removeShields: .constant({}),
+        applyShields: .constant({})
+    )
 }
+
